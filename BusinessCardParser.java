@@ -30,14 +30,14 @@ public class BusinessCardParser {
 		String test = "Software Engineer\nJim John\njimJohn@g.com\nTel: 1-443-223-3945\nFax: +1 410-757-7373";
 		String example1 = "Entegra Systems\nJohn Doe\nSenior Software Engineer\n(410)555-1234\njohn.doe@entegrasystems.com";
 		String example2 = "Acme Technologies\nAnalytic Developer\nJane Doe\n1234 Roadrunner Way\nColumbia, MD 12345\nPhone: 410-555-1234\nFax: 410-555-4321\nJane.doe@acmetech.com";
-		String example3 = "Bob Smith\nSoftware Engineer\nDivision & Security Technologies\nABC Technologies\n123 North 11th Street\nSuite 229\nArlington, VA 22209\nTel: +1 (703)555-1259\nFax: +1 (703)555-1200\nbsmith@abctech.com";
+		String example3 = "Bob Smith\nSoftware Engineer\nDivision & Security Technologies\nABC Technologies\n123 North 11th Street\nSuite 229\nArlington, VA 22209\nTel: +1 (703) 555-1259\nFax: +1 (703) 555-1200\nbsmith@abctech.com";
 		System.out.println("Input: \n");
-		System.out.println(example3);
+		System.out.println(example1);
 		System.out.println("\n");
 		System.out.println("Output: \n");
 		//I included a toString method for the data ContactInfo and include it here
 		//so the output automatically prints out
-		ContactInfo c = getContactInfo(example3);
+		ContactInfo c = getContactInfo(example1);
 		System.out.println(c.toString());
 	}
 	
@@ -81,7 +81,7 @@ public class BusinessCardParser {
 		//I made separate methods below in this class that individually deal with
 		//finding the 3 pieces of information being looked for
 		name = findName(lines);
-		phone  = findPhone(text);
+		phone  = findPhone(lines);
 		email = findEmail(text);
 		ContactInfo c = new ContactInfo(name, phone, email);
 		sc.close();
@@ -183,27 +183,24 @@ public class BusinessCardParser {
 		}
 		return name;
 	}
+	
 	/*
 	 * Find phone is a tad bit easier than finding the name
 	 * The only thing that will make it through the phone number regex
 	 * that is not a phone number would be a fax number.
 	 * So below I give in an arrayList that takes the input String
-	 * and breaks on space and new lines. Therefore, I have to check if 
-	 * the number that matches the regex is labeled as fax and also I have to check 
-	 * if there is a "+1" that needs to be put at the beginning of the number also.
+	 * and breaks on new lines. I then remove any non digit value once confirming
+	 * the regex match is not a fax number.
 	 */
-	static String findPhone(ArrayList<String> text){
-		//the only thing that could be confused as a phone number on 
-		//a business card is a fax number, that is why there are only 2 possible 
-		//phone number matches maximum
+	static String findPhone(ArrayList<String> lines){
 		int maxPhoneMatches =2;
 		String possible_phoneNum[] = new String[maxPhoneMatches];
 		String phone = null;
 		int matchCount =0;
-		for(int i=0; i<text.size();i++){
-			String regex = "(?:\\+\\s*)?(?:(1-)\\s*)?(?:\\()?(\\d\\d\\d)(?:-|\\s*|\\))?\\s*(\\d\\d\\d)(?:-|\\s*)?(\\d\\d\\d\\d)";
-			if(text.get(i).matches(regex)){
-				possible_phoneNum[matchCount] = text.get(i);
+		for(int i=0; i<lines.size();i++){
+			String regex = "(?:[A-Za-z:]*\\s*)?(?:\\+\\s*)?(?:([1]-?)\\s*)?(?:\\()?(\\d\\d\\d)(?:-|\\s*|\\))?\\s*(\\d\\d\\d)(?:-|\\s*)?(\\d\\d\\d\\d)";
+			if(lines.get(i).matches(regex)){
+				possible_phoneNum[matchCount] = lines.get(i);
 				matchCount++;
 			}
 
@@ -212,49 +209,24 @@ public class BusinessCardParser {
 		if(matchCount ==0){
 			phone = "N/A";
 		}
-
+		//if only one match, that is the phone number
+		else if(matchCount==1){
+			phone = possible_phoneNum[0];
+		}
 		else{
 			for(int j =0; j<maxPhoneMatches;j++){
-				int h=0;
-				while(possible_phoneNum[j] != null && !(possible_phoneNum[j].equals(text.get(h))) ){
-					h++;
-				}
-				//if 1 match, that is the phone number, must check if there is 
-				//a 1 that needs to be put at the beginning
-				if(matchCount == 1){
-					if(h>0 && text.get(h-1).toLowerCase().endsWith("1")){
-					phone = "1" + possible_phoneNum[0];
-					}
-					else{
-						phone = possible_phoneNum[0];
-					}
-				}
-				/*
-				 * This is if there are multiple matches with the regular expression,
-				 * Where I check if something is labeled with "fax" to determine what is
-				 * the fax and the actual phone number.
-				 */
-				else{
-					if(text.get(h-1).toLowerCase().endsWith("1") && !(text.get(h-2).toLowerCase().contains("fax"))){
-						phone = "1" + text.get(h);
-						break;
-					}
-					else if(!(text.get(h-1).toLowerCase().startsWith("fax")) || text.get(h-1).toLowerCase().startsWith("tel")){
-						phone = text.get(h);
-						break;
-					}
-				}
+			if(!(possible_phoneNum[j].toLowerCase().contains("fax"))){
+				phone = possible_phoneNum[j];
+			}
 			}
 		}
-		/*
-		 * Here is simply am removing all the non digit values in the 
-		 * string to make it equivalent to the specification in result
-		 */
-		phone = phone.replace("-", "");
-		phone = phone.replace("(", "");
-		phone = phone.replace(")", "");
-		phone = phone.replace(" ", "");
-		phone = phone.replace("+", "");
+		//non digit values that can appear in the text that needs to be removed 
+		String nonDigits [] = {"-", "(", ")", " ", "+", ":", "a", "b", "c", "d", "e", "f", "g", "h", 
+								"i", "k", "l", "m", "n", "o","p", "q", "r", "s", "t", "u", "v", "w", "x", "y", "z"};
+		phone = phone.toLowerCase();
+		for(int k=0;k<nonDigits.length;k++){
+			phone = phone.replace(nonDigits[k], "");
+		}
 		return phone;
 	}
 	
