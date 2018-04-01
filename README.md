@@ -9,6 +9,6 @@ With that being said, that is about all that needs done if I can recall correctl
 hesitate to email me.
 
 Also, there are many comments throughout my code so you should have a good idea of what is being done, but if not, please
-ask me also.
+ask me.
 
 Thanks!
